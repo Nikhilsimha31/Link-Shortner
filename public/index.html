@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNIP — Link Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#08080e;--s1:#0f0f18;--s2:#161622;--s3:#1e1e2e;--border:#252538;--border2:#32324a;--green:#00e87a;--green2:#00ff99;--pink:#ff2d6b;--purple:#8b7fff;--blue:#38bdf8;--yellow:#fbbf24;--orange:#fb923c;--text:#eeeef5;--text2:#9999b3;--mono:'Space Mono',monospace;--sans:'Syne',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 600px 400px at 10% 20%,rgba(0,232,122,.04) 0%,transparent 70%),radial-gradient(ellipse 500px 500px at 90% 80%,rgba(139,127,255,.04) 0%,transparent 70%);pointer-events:none;z-index:0}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+/* ── AUTH ── */
+#authScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.auth-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:44px 48px;width:440px;position:relative;overflow:hidden}
+.auth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,var(--green),var(--purple),transparent 70%)}
+.auth-logo{display:flex;align-items:baseline;gap:4px;margin-bottom:8px}
+.auth-logo-name{font-size:36px;font-weight:800;letter-spacing:-.03em}
+.auth-logo-name em{font-style:normal;color:var(--green)}
+.auth-logo-badge{font-family:var(--mono);font-size:9px;color:var(--purple);border:1px solid rgba(139,127,255,.3);padding:2px 7px;border-radius:2px;letter-spacing:.15em}
+.auth-sub{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.04em;margin-bottom:32px}
+.auth-tabs{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.auth-tab{flex:1;padding:10px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:none;border:none;color:var(--text2);cursor:pointer;transition:all .2s}
+.auth-tab.active{background:var(--s3);color:var(--green)}
+.auth-field{margin-bottom:14px}
+.auth-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px}
+.auth-input{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:11px 14px;outline:none;border-radius:3px;transition:border-color .2s}
+.auth-input:focus{border-color:var(--green)}.auth-input.err{border-color:var(--pink)}
+.auth-err{font-family:var(--mono);font-size:10px;color:var(--pink);margin-top:6px;display:none}.auth-err.show{display:block}
+.btn-auth{width:100%;background:var(--green);color:#08080e;border:none;font-family:var(--sans);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:13px;cursor:pointer;border-radius:3px;transition:all .15s;margin-top:6px}
+.btn-auth:hover{background:var(--green2);box-shadow:0 0 20px rgba(0,232,122,.25)}.btn-auth:active{transform:translateY(1px)}
+.btn-auth:disabled{opacity:.5;cursor:not-allowed}
+.auth-db-note{font-family:var(--mono);font-size:9px;color:var(--text2);text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.auth-db-note span{color:var(--green)}
+
+/* ── APP ── */
+#appScreen{display:none}
+header{padding:28px 0 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin-bottom:32px}
+.brand{display:flex;flex-direction:column;gap:6px}
+.brand-tag{font-family:var(--mono);font-size:10px;letter-spacing:.25em;color:var(--green);display:flex;align-items:center;gap:8px}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,232,122,.5)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(0,232,122,0)}}
+.brand-name{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1}
+.brand-name em{font-style:normal;color:var(--green)}
+.brand-sub{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.04em}
+.header-right{display:flex;align-items:center;gap:12px}
+.user-pill{font-family:var(--mono);font-size:10px;color:var(--purple);background:rgba(139,127,255,.1);border:1px solid rgba(139,127,255,.25);padding:7px 14px;border-radius:3px;letter-spacing:.06em}
+.btn-outline{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text2);background:none;border:1px solid var(--border);padding:8px 14px;cursor:pointer;border-radius:3px;transition:all .2s;text-transform:uppercase}
+.btn-outline:hover{border-color:var(--border2);color:var(--text)}
+
+/* ── INPUT CARD ── */
+.input-card{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:28px;margin-bottom:28px;position:relative;overflow:hidden}
+.input-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,var(--green),var(--purple),transparent 70%)}
+.card-label{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--green);text-transform:uppercase;margin-bottom:18px;opacity:.8}
+.input-row1{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:start;margin-bottom:10px}
+.input-row2{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:start}
+.field-wrap{position:relative;display:flex;align-items:center}
+.prefix{font-family:var(--mono);font-size:12px;color:var(--text2);background:var(--s2);border:1px solid var(--border);border-right:none;padding:0 12px;height:46px;display:flex;align-items:center;border-radius:3px 0 0 3px;white-space:nowrap;flex-shrink:0;transition:opacity .2s}
+.url-input{flex:1;background:var(--s2);border:1px solid var(--border);border-left:none;color:var(--text);font-family:var(--mono);font-size:12px;padding:0 14px;height:46px;outline:none;transition:border-color .2s;border-radius:0 3px 3px 0;min-width:0}
+.url-input::placeholder{color:var(--text2)}.url-input:focus{border-color:var(--green)}.url-input.error{border-color:var(--pink)}
+.alias-input,.limit-input{background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:0 14px;height:46px;outline:none;transition:border-color .2s;border-radius:3px;width:100%}
+.alias-input::placeholder,.limit-input::placeholder{color:var(--text2);font-size:11px}
+.alias-input:focus{border-color:var(--purple)}.limit-input:focus{border-color:var(--yellow)}
+.input-row2-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px}
+.btn-shorten{background:var(--green);color:#08080e;border:none;font-family:var(--sans);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:0 24px;height:46px;cursor:pointer;border-radius:3px;transition:all .15s;white-space:nowrap}
+.btn-shorten:hover{background:var(--green2);box-shadow:0 0 20px rgba(0,232,122,.25);transform:translateY(-1px)}.btn-shorten:active{transform:translateY(0)}.btn-shorten.loading{opacity:.6;pointer-events:none}
+.input-meta{display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px}
+.error-msg{font-family:var(--mono);font-size:10px;color:var(--pink);display:none}.error-msg.show{display:block}
+.input-hint{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.03em}.input-hint b{color:var(--green);font-weight:400}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:28px}
+.stat{background:var(--s1);padding:16px 18px}
+.stat-val{font-family:var(--mono);font-size:22px;font-weight:700;line-height:1}
+.stat-val.green{color:var(--green)}.stat-val.purple{color:var(--purple)}.stat-val.blue{color:var(--blue)}.stat-val.yellow{color:var(--yellow)}.stat-val.orange{color:var(--orange)}
+.stat-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--text2);text-transform:uppercase;margin-top:6px}
+
+/* ── RESULT BANNER ── */
+.result-banner{background:var(--s1);border:1px solid var(--green);border-radius:6px;padding:18px 20px;margin-bottom:24px;display:none;position:relative;overflow:hidden}
+.result-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,var(--green),var(--purple),transparent 70%)}
+.result-banner.show{display:block;animation:bannerIn .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bannerIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.result-label{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--green);text-transform:uppercase;margin-bottom:10px}
+.result-row{display:flex;gap:8px;align-items:center}
+.result-input{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--green);font-family:var(--mono);font-size:13px;padding:11px 14px;border-radius:3px;outline:none;cursor:text;letter-spacing:.03em;min-width:0}
+.result-input:focus{border-color:var(--green)}
+.btn-copy-result{background:var(--green);color:#08080e;border:none;font-family:var(--sans);font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:0 20px;height:42px;cursor:pointer;border-radius:3px;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.btn-copy-result:hover{background:var(--green2)}.btn-copy-result.done{background:var(--s2);color:var(--green);border:1px solid var(--green)}
+.result-dismiss{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:11px;color:var(--text2);background:none;border:none;cursor:pointer;padding:2px 6px}
+.result-dismiss:hover{color:var(--text)}
+
+/* ── CHART ── */
+.chart-section{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:22px;margin-bottom:22px;display:none}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.chart-title{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--text2);text-transform:uppercase}
+.chart-bars{display:flex;align-items:flex-end;gap:6px;height:72px}
+.chart-bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0}
+.chart-bar{width:100%;border-radius:2px 2px 0 0;transition:height .5s ease;cursor:pointer;position:relative}
+.chart-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:2px;white-space:nowrap;pointer-events:none;z-index:10}
+.chart-bar-lbl{font-family:var(--mono);font-size:8px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;text-align:center}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search-wrap{position:relative}
+.search-input{background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 12px 7px 32px;outline:none;border-radius:3px;width:200px;transition:border-color .2s}
+.search-input:focus{border-color:var(--border2)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:12px;pointer-events:none}
+.sort-select,.filter-select{background:var(--s1);border:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:10px;padding:7px 12px;outline:none;border-radius:3px;cursor:pointer;letter-spacing:.05em}
+.sort-select option,.filter-select option{background:var(--s2)}
+.toolbar-right{display:flex;gap:8px}
+.tb-btn{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text2);background:var(--s1);border:1px solid var(--border);padding:7px 12px;cursor:pointer;border-radius:3px;transition:all .2s;text-transform:uppercase}
+.tb-btn:hover{border-color:var(--border2);color:var(--text)}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:6px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:800px}
+thead tr{border-bottom:1px solid var(--border)}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--text2);padding:12px 14px;text-align:left;font-weight:400;text-transform:uppercase;white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}tbody tr{transition:background .12s}tbody tr:hover{background:var(--s2)}
+tbody tr.disabled-row{opacity:.55}
+.favicon{width:14px;height:14px;border-radius:2px;margin-right:8px;vertical-align:middle;flex-shrink:0}
+.orig-cell{display:flex;align-items:center;max-width:220px}
+.orig-url{font-family:var(--mono);font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.short-link-cell{display:flex;align-items:center;gap:6px}
+.short-url-text{font-family:var(--mono);font-size:11px;color:var(--purple)}
+.short-open-btn{font-family:var(--mono);font-size:9px;color:var(--green);background:rgba(0,232,122,.08);border:1px solid rgba(0,232,122,.2);padding:3px 8px;border-radius:2px;cursor:pointer;text-decoration:none;transition:all .15s;white-space:nowrap}
+.short-open-btn:hover{background:rgba(0,232,122,.18)}
+.click-num{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--green);line-height:1}
+.click-limit-info{font-family:var(--mono);font-size:9px;color:var(--text2);margin-top:3px}
+.click-bar-wrap{margin-top:4px;height:2px;background:var(--border);border-radius:1px;width:80px}
+.click-bar-fill{height:100%;border-radius:1px;transition:width .6s ease}
+.date-txt{font-family:var(--mono);font-size:10px;color:var(--text2);white-space:pre-line;line-height:1.6}
+.tag-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(139,127,255,.12);color:var(--purple);border:1px solid rgba(139,127,255,.2);letter-spacing:.05em;margin-left:6px;flex-shrink:0}
+.status-badge{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:2px;letter-spacing:.06em;font-weight:700;white-space:nowrap}
+.status-badge.active{background:rgba(0,232,122,.1);color:var(--green);border:1px solid rgba(0,232,122,.25)}
+.status-badge.disabled{background:rgba(251,191,36,.1);color:var(--yellow);border:1px solid rgba(251,191,36,.25)}
+.status-badge.expired{background:rgba(255,45,107,.1);color:var(--pink);border:1px solid rgba(255,45,107,.25)}
+.row-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.act-btn{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--text2);background:none;border:1px solid var(--border);padding:4px 8px;cursor:pointer;border-radius:2px;transition:all .18s;text-transform:uppercase;white-space:nowrap}
+.act-btn:hover{color:var(--text);border-color:var(--border2)}
+.act-btn.copied{color:var(--green);border-color:var(--green)}
+.act-btn.del:hover{color:var(--pink);border-color:var(--pink)}
+.act-btn.qr-act:hover{color:var(--blue);border-color:var(--blue)}
+.act-btn.toggle-on:hover{color:var(--yellow);border-color:var(--yellow)}
+.act-btn.toggle-off:hover{color:var(--green);border-color:var(--green)}
+.act-btn.edit-act:hover{color:var(--purple);border-color:var(--purple)}
+.empty{text-align:center;padding:64px 20px;background:var(--s1);border:1px solid var(--border);border-radius:6px}
+.empty-glyph{font-size:36px;margin-bottom:14px;opacity:.25}
+.empty-txt{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.8}
+
+/* ── OVERLAY / MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:36px;width:90%;max-width:480px;position:relative;transform:translateY(16px) scale(.98);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.overlay.show .modal{transform:translateY(0) scale(1)}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,var(--purple),var(--green),transparent 70%)}
+.modal-tag{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--purple);text-transform:uppercase;margin-bottom:14px}
+.modal-title{font-size:20px;font-weight:800;margin-bottom:12px;line-height:1.2}
+.modal-btns{display:flex;gap:10px}
+.btn-go{flex:1;background:var(--green);color:#08080e;border:none;font-family:var(--sans);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:12px;cursor:pointer;border-radius:3px;transition:all .15s}
+.btn-go:hover{background:var(--green2)}
+.btn-cancel{background:none;color:var(--text2);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:12px 20px;cursor:pointer;border-radius:3px;transition:all .15s}
+.btn-cancel:hover{color:var(--text);border-color:var(--border2)}
+.qr-modal .modal::before{background:linear-gradient(90deg,var(--blue),var(--purple),transparent 70%)}
+.qr-box{display:flex;align-items:center;justify-content:center;background:#fff;border-radius:4px;padding:16px;margin-bottom:14px}
+.qr-label{font-family:var(--mono);font-size:10px;color:var(--text2);text-align:center;margin-bottom:14px;word-break:break-all}
+.btn-dl{width:100%;background:var(--blue);color:#08080e;border:none;font-family:var(--sans);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:12px;cursor:pointer;border-radius:3px;margin-bottom:8px;transition:opacity .15s}
+.btn-dl:hover{opacity:.85}
+.edit-modal .modal::before{background:linear-gradient(90deg,var(--purple),var(--blue),transparent 70%)}
+.edit-field{margin-bottom:16px}
+.edit-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:7px}
+.edit-input{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:11px 14px;outline:none;border-radius:3px;transition:border-color .2s}
+.edit-input:focus{border-color:var(--purple)}.edit-input.err{border-color:var(--pink)}
+.edit-err{font-family:var(--mono);font-size:10px;color:var(--pink);margin-top:6px;display:none}.edit-err.show{display:block}
+.btn-save{flex:1;background:var(--purple);color:#fff;border:none;font-family:var(--sans);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:12px;cursor:pointer;border-radius:3px;transition:all .15s}
+.btn-save:hover{opacity:.85}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:12px 18px;border-radius:4px;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);z-index:999;max-width:300px;line-height:1.5}
+.toast.show{transform:translateY(0);opacity:1}.toast.green{border-color:var(--green);color:var(--green)}.toast.purple{border-color:var(--purple);color:var(--purple)}.toast.pink{border-color:var(--pink);color:var(--pink)}.toast.yellow{border-color:var(--yellow);color:var(--yellow)}
+
+footer{text-align:center;padding:28px 0;font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.1em;border-top:1px solid var(--border);margin-top:40px}
+@media(max-width:720px){.input-row1,.input-row2{grid-template-columns:1fr}.stats-row{grid-template-columns:repeat(2,1fr)}.toolbar{flex-direction:column;align-items:stretch}.search-input{width:100%}header{flex-direction:column;gap:16px}.auth-card{width:100%;padding:32px 24px}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.new-row{animation:rowIn .4s cubic-bezier(.34,1.56,.64,1)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-name">SN<em>I</em>P</div>
+      <div class="auth-logo-badge">v4.0</div>
+    </div>
+    <p class="auth-sub">// link management platform — shorten · control · analyze</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">Register</button>
+    </div>
+    <div id="registerFields" style="display:none">
+      <div class="auth-field">
+        <label class="auth-label">Full Name</label>
+        <input class="auth-input" id="authName" type="text" placeholder="Your name" autocomplete="name"/>
+      </div>
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">Email</label>
+      <input class="auth-input" id="authEmail" type="email" placeholder="you@example.com" autocomplete="email"/>
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">Password</label>
+      <input class="auth-input" id="authPwd" type="password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <div class="auth-err" id="authErr"></div>
+    <button class="btn-auth" id="authBtn" onclick="handleAuth()">Sign In →</button>
+    <p class="auth-db-note">Powered by <span>Neon Postgres</span> · data persists across all devices</p>
+  </div>
+</div>
+
+<!-- ═══════════════ APP SCREEN ═══════════════ -->
+<div id="appScreen">
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="brand-tag"><div class="live-dot"></div>CONNECTED TO DATABASE</div>
+        <div class="brand-name">SN<em>I</em>P</div>
+        <div class="brand-sub">// real link shortener · auth + analytics · cloud database</div>
+      </div>
+      <div class="header-right">
+        <div class="user-pill" id="userPill">▣ —</div>
+        <button class="btn-outline" onclick="handleLogout()">Sign Out</button>
+      </div>
+    </header>
+
+    <!-- INPUT CARD -->
+    <div class="input-card">
+      <div class="card-label">// shorten a link</div>
+      <div class="input-row1">
+        <div class="field-wrap">
+          <div class="prefix" id="urlPrefix">https://</div>
+          <input class="url-input" id="urlInput" type="url" placeholder="Paste any long URL here…" autocomplete="off"/>
+        </div>
+        <button class="btn-shorten" id="shortenBtn" onclick="handleShorten()">Shorten →</button>
+      </div>
+      <div class="input-row2">
+        <div>
+          <label class="input-row2-label">Custom Alias (optional)</label>
+          <input class="alias-input" id="aliasInput" type="text" placeholder="my-custom-link"/>
+        </div>
+        <div>
+          <label class="input-row2-label">Click Limit (optional)</label>
+          <input class="limit-input" id="limitInput" type="number" min="1" placeholder="e.g. 100"/>
+        </div>
+      </div>
+      <div class="input-meta">
+        <div class="error-msg" id="errorMsg">⚠ Please enter a valid URL</div>
+        <div class="input-hint">Short links are real URLs: <b>yoursite.netlify.app/r/code</b> — paste anywhere</div>
+      </div>
+    </div>
+
+    <!-- RESULT BANNER -->
+    <div class="result-banner" id="resultBanner">
+      <div class="result-label">// link shortened — ready to share</div>
+      <div class="result-row">
+        <input class="result-input" id="resultInput" type="text" readonly/>
+        <button class="btn-copy-result" id="copyResultBtn" onclick="copyResult()">Copy Link</button>
+      </div>
+      <button class="result-dismiss" onclick="dismissResult()">✕</button>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val green" id="st-total">0</div><div class="stat-lbl">Total Links</div></div>
+      <div class="stat"><div class="stat-val purple" id="st-clicks">0</div><div class="stat-lbl">Total Clicks</div></div>
+      <div class="stat"><div class="stat-val blue" id="st-active">0</div><div class="stat-lbl">Active</div></div>
+      <div class="stat"><div class="stat-val yellow" id="st-custom">0</div><div class="stat-lbl">Custom Alias</div></div>
+      <div class="stat"><div class="stat-val orange" id="st-disabled">0</div><div class="stat-lbl">Disabled</div></div>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-section" id="chartSection">
+      <div class="chart-header">
+        <div class="chart-title">// clicks per link (top 12)</div>
+      </div>
+      <div class="chart-bars" id="chartBars"></div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input class="search-input" id="searchInput" placeholder="Search links…" oninput="renderDashboard()"/>
+        </div>
+        <select class="sort-select" id="sortSelect" onchange="renderDashboard()">
+          <option value="newest">Newest first</option>
+          <option value="clicks">Most clicks</option>
+          <option value="oldest">Oldest first</option>
+          <option value="alpha">A → Z</option>
+        </select>
+        <select class="filter-select" id="filterSelect" onchange="renderDashboard()">
+          <option value="all">All links</option>
+          <option value="active">Active only</option>
+          <option value="disabled">Disabled</option>
+          <option value="custom">Custom alias</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+      <div class="toolbar-right">
+        <button class="tb-btn" onclick="loadLinks()">↺ Refresh</button>
+        <button class="tb-btn" onclick="exportCSV()">↓ CSV</button>
+        <button class="tb-btn" onclick="clearAll()" style="color:var(--pink)">✕ Clear All</button>
+      </div>
+    </div>
+
+    <!-- LINK TABLE -->
+    <div id="linkContainer"></div>
+  </div>
+</div>
+
+<!-- ═══ EDIT MODAL ═══ -->
+<div class="overlay edit-modal" id="editOverlay">
+  <div class="modal">
+    <div class="modal-tag">// edit link</div>
+    <div class="modal-title">Edit Destination</div>
+    <input type="hidden" id="editCode"/>
+    <div class="edit-field">
+      <label class="edit-label">Short Code</label>
+      <div style="font-family:var(--mono);font-size:13px;color:var(--purple);padding:4px 0" id="editCodeDisplay"></div>
+    </div>
+    <div class="edit-field">
+      <label class="edit-label">New Destination URL</label>
+      <input class="edit-input" id="editUrl" type="text" placeholder="https://new-destination.com"/>
+      <div class="edit-err" id="editErr">⚠ Enter a valid URL (include https://)</div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-save" onclick="saveEdit()">Save Changes →</button>
+      <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ QR MODAL ═══ -->
+<div class="overlay qr-modal" id="qrOverlay">
+  <div class="modal">
+    <div class="modal-tag">// qr code</div>
+    <div class="modal-title">Scan to Visit</div>
+    <div class="qr-label" id="qrLabel"></div>
+    <div class="qr-box"><div id="qrCode"></div></div>
+    <button class="btn-dl" onclick="downloadQR()">↓ Download QR as PNG</button>
+    <button class="btn-cancel" style="width:100%;text-align:center" onclick="closeQR()">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>SNIP v4.0 — real link shortener · Netlify Functions · Neon Postgres · <span style="color:var(--green)">cloud persistence</span></footer>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════
+// API base — works both locally (netlify dev) and in production
+const API = '';  // empty = same origin, rely on netlify.toml redirects
+const SESSION_KEY = 'snip_jwt_v4';
+
+let currentUser = null; // {id, email, name}
+let authToken = null;
+let links = [];
+let currentQrUrl = '';
+let authMode = 'login';
+
+// ════════════════════════════════════════════
+// API HELPERS
+// ════════════════════════════════════════════
+async function apiFetch(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const res = await fetch(`/.netlify/functions${path}`, {
+    ...options,
+    headers: { ...headers, ...(options.headers || {}) },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+function init() {
+  // Restore JWT session
+  const saved = localStorage.getItem(SESSION_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      authToken = parsed.token;
+      currentUser = parsed.user;
+    } catch(e) {}
+  }
+
+  if (authToken && currentUser) {
+    bootApp();
+  } else {
+    showAuth();
+  }
+
+  // Modal close on backdrop click
+  ['editOverlay','qrOverlay'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) {
+        if (id === 'editOverlay') closeEdit();
+        else closeQR();
+      }
+    });
+  });
+
+  document.getElementById('authPwd').addEventListener('keydown', e => { if(e.key==='Enter') handleAuth(); });
+  document.getElementById('authEmail').addEventListener('keydown', e => { if(e.key==='Enter') handleAuth(); });
+  document.getElementById('editUrl').addEventListener('keydown', e => { if(e.key==='Enter') saveEdit(); });
+}
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+function switchTab(mode) {
+  authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode==='login');
+  document.getElementById('tabRegister').classList.toggle('active', mode==='register');
+  document.getElementById('registerFields').style.display = mode==='register' ? 'block' : 'none';
+  document.getElementById('authBtn').textContent = mode==='login' ? 'Sign In →' : 'Create Account →';
+  document.getElementById('authErr').classList.remove('show');
+}
+
+async function handleAuth() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const pwd = document.getElementById('authPwd').value;
+  const name = document.getElementById('authName').value.trim();
+  const btn = document.getElementById('authBtn');
+
+  if (!email || !pwd) { showAuthErr('Email and password are required.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuthErr('Enter a valid email address.'); return; }
+  if (authMode === 'register' && !name) { showAuthErr('Please enter your name.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = authMode === 'login' ? 'Signing in…' : 'Creating account…';
+
+  try {
+    const data = await apiFetch('/auth', {
+      method: 'POST',
+      body: JSON.stringify({ action: authMode, email, password: pwd, name }),
+    });
+
+    authToken = data.token;
+    currentUser = data.user;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ token: authToken, user: currentUser }));
+
+    bootApp();
+    showToast(authMode === 'register' ? `👋 Welcome, ${data.user.name}!` : `✓ Welcome back, ${data.user.name}!`, 'green');
+  } catch (err) {
+    showAuthErr(err.message);
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? 'Sign In →' : 'Create Account →';
+  }
+}
+
+function showAuthErr(msg) {
+  const el = document.getElementById('authErr');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function showAuth() {
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('appScreen').style.display = 'none';
+}
+
+function bootApp() {
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+  document.getElementById('userPill').textContent = `▣ ${currentUser.name}`;
+  loadLinks();
+
+  document.getElementById('urlInput').addEventListener('keydown', e => { if(e.key==='Enter') handleShorten(); });
+  document.getElementById('aliasInput').addEventListener('keydown', e => { if(e.key==='Enter') handleShorten(); });
+  document.getElementById('limitInput').addEventListener('keydown', e => { if(e.key==='Enter') handleShorten(); });
+  document.getElementById('urlInput').addEventListener('input', function() {
+    const v = this.value.trim();
+    document.getElementById('urlPrefix').style.opacity = (/^https?:\/\//i.test(v) || v.startsWith('//')) ? .3 : 1;
+    if (this.classList.contains('error')) {
+      this.classList.remove('error');
+      document.getElementById('errorMsg').classList.remove('show');
+    }
+  });
+}
+
+function handleLogout() {
+  localStorage.removeItem(SESSION_KEY);
+  authToken = null;
+  currentUser = null;
+  links = [];
+  ['urlInput','aliasInput','limitInput','searchInput'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('resultBanner').classList.remove('show');
+  document.getElementById('chartSection').style.display = 'none';
+  showAuth();
+  showToast('↩ Signed out', '');
+}
+
+// ════════════════════════════════════════════
+// LOAD LINKS
+// ════════════════════════════════════════════
+async function loadLinks() {
+  try {
+    const data = await apiFetch('/links');
+    links = data.links;
+    renderAll();
+  } catch (err) {
+    if (err.message.includes('Unauthorized')) {
+      showToast('Session expired — please sign in again', 'pink');
+      handleLogout();
+    } else {
+      showToast('⚠ Failed to load links: ' + err.message, '');
+    }
+  }
+}
+
+// ════════════════════════════════════════════
+// SHORTEN
+// ════════════════════════════════════════════
+async function handleShorten() {
+  const input = document.getElementById('urlInput');
+  const aliasEl = document.getElementById('aliasInput');
+  const limitEl = document.getElementById('limitInput');
+  const btn = document.getElementById('shortenBtn');
+  const raw = input.value.trim();
+
+  if (!raw) { input.classList.add('error'); document.getElementById('errorMsg').classList.add('show'); input.focus(); return; }
+  const fullUrl = normalizeUrl(raw);
+  if (!fullUrl || !isValidUrl(fullUrl)) { input.classList.add('error'); document.getElementById('errorMsg').classList.add('show'); input.focus(); return; }
+  input.classList.remove('error'); document.getElementById('errorMsg').classList.remove('show');
+
+  btn.textContent = 'Shortening...'; btn.classList.add('loading');
+
+  try {
+    const data = await apiFetch('/links', {
+      method: 'POST',
+      body: JSON.stringify({
+        originalUrl: fullUrl,
+        alias: aliasEl.value.trim() || null,
+        clickLimit: limitEl.value.trim() || null,
+      }),
+    });
+
+    links.unshift(data.link);
+    renderAll();
+
+    // Show result
+    const banner = document.getElementById('resultBanner');
+    document.getElementById('resultInput').value = data.link.short;
+    banner.classList.add('show');
+    setTimeout(() => document.getElementById('resultInput').select(), 50);
+
+    // Copy to clipboard automatically
+    if (navigator.clipboard) navigator.clipboard.writeText(data.link.short).catch(()=>{});
+    showToast('✓ Short link created & copied!', 'green');
+
+    input.value = '';
+    aliasEl.value = '';
+    limitEl.value = '';
+    document.getElementById('urlPrefix').style.opacity = 1;
+  } catch (err) {
+    showToast('⚠ ' + err.message, '');
+  }
+
+  btn.textContent = 'Shorten →'; btn.classList.remove('loading');
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function renderAll() {
+  renderStats();
+  renderChart();
+  renderDashboard();
+}
+
+function renderStats() {
+  const active = links.filter(l => getLinkStatus(l) === 'active').length;
+  const disabled = links.filter(l => !l.enabled).length;
+  const custom = links.filter(l => l.custom).length;
+  const totalClicks = links.reduce((a, l) => a + l.clicks, 0);
+  document.getElementById('st-total').textContent = links.length;
+  document.getElementById('st-clicks').textContent = totalClicks;
+  document.getElementById('st-active').textContent = active;
+  document.getElementById('st-custom').textContent = custom;
+  document.getElementById('st-disabled').textContent = disabled;
+}
+
+function getLinkStatus(l) {
+  if (!l.enabled) return 'disabled';
+  if (isExpired(l)) return 'expired';
+  return 'active';
+}
+
+function isExpired(l) {
+  return l.clickLimit !== null && l.clickLimit !== undefined && l.clicks >= l.clickLimit;
+}
+
+function renderChart() {
+  const sec = document.getElementById('chartSection');
+  const top = [...links].sort((a,b) => b.clicks - a.clicks).slice(0, 12).filter(l => l.clicks > 0);
+  if (!top.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  const max = Math.max(...top.map(l => l.clicks), 1);
+  document.getElementById('chartBars').innerHTML = top.map(l => {
+    const pct = Math.max(Math.round((l.clicks / max) * 100), 4);
+    const colors = ['var(--green)','var(--purple)','var(--blue)','var(--yellow)','var(--orange)','var(--pink)'];
+    const col = colors[top.indexOf(l) % colors.length];
+    return `<div class="chart-bar-col">
+      <div class="chart-bar" style="height:${pct}%;background:${col}" data-tip="${l.code}: ${l.clicks} clicks"></div>
+      <div class="chart-bar-lbl">${escH(l.code)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+  const filterVal = document.getElementById('filterSelect').value;
+  const container = document.getElementById('linkContainer');
+
+  let filtered = links.filter(l => {
+    if (q && !l.original.toLowerCase().includes(q) && !l.code.toLowerCase().includes(q) && !(l.domain||'').toLowerCase().includes(q)) return false;
+    if (filterVal === 'active') return getLinkStatus(l) === 'active';
+    if (filterVal === 'disabled') return !l.enabled;
+    if (filterVal === 'custom') return l.custom;
+    if (filterVal === 'expired') return getLinkStatus(l) === 'expired';
+    return true;
+  });
+
+  if (sort === 'clicks') filtered.sort((a,b) => b.clicks - a.clicks);
+  else if (sort === 'oldest') filtered.sort((a,b) => new Date(a.created) - new Date(b.created));
+  else if (sort === 'alpha') filtered.sort((a,b) => a.original.localeCompare(b.original));
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-glyph">⛓</div><div class="empty-txt">${links.length ? 'No links match your filter' : 'No links yet — paste any URL above to get started'}</div></div>`;
+    return;
+  }
+
+  const maxC = Math.max(...filtered.map(l => l.clicks), 1);
+  container.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>Original URL</th>
+      <th>Short Link</th>
+      <th class="sortable" onclick="cycleSort()">Clicks ↕</th>
+      <th>Status</th>
+      <th>Created</th>
+      <th>Last Accessed</th>
+      <th>Actions</th>
+    </tr></thead>
+    <tbody>${filtered.map(l => {
+      const status = getLinkStatus(l);
+      const pct = l.clickLimit ? Math.min((l.clicks/l.clickLimit)*100, 100) : (l.clicks ? Math.min((l.clicks/maxC)*100, 100) : 0);
+      const barColor = status==='expired' ? 'var(--pink)' : status==='disabled' ? 'var(--yellow)' : 'linear-gradient(90deg,var(--green),var(--purple))';
+      return `<tr id="row-${l.code}" class="${status!=='active'?'disabled-row':''}">
+        <td><div class="orig-cell">
+          <img class="favicon" src="${l.favicon||''}" onerror="this.style.display='none'" loading="lazy"/>
+          <span class="orig-url" title="${escH(l.original)}">${escH(l.domain||l.original)}</span>
+          ${l.custom?`<span class="tag-badge">alias</span>`:''}
+        </div></td>
+        <td>
+          <div class="short-link-cell">
+            <span class="short-url-text" title="${escH(l.short)}">/r/${escH(l.code)}</span>
+            <a class="short-open-btn" href="${escH(l.short)}" target="_blank" rel="noopener">Open ↗</a>
+          </div>
+        </td>
+        <td>
+          <div class="click-num">${l.clicks}${l.clickLimit?`<span style="font-size:10px;color:var(--text2);font-weight:400">/${l.clickLimit}</span>`:''}</div>
+          <div class="click-bar-wrap"><div class="click-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+          ${l.clickLimit?`<div class="click-limit-info">${l.clickLimit-l.clicks>0?`${l.clickLimit-l.clicks} remaining`:'limit reached'}</div>`:''}
+        </td>
+        <td><span class="status-badge ${status}">${status}</span></td>
+        <td><div class="date-txt">${fmtDate(l.created)}</div></td>
+        <td><div class="date-txt">${l.lastAccessed ? fmtDate(l.lastAccessed) : '<span style="color:var(--border2)">— never —</span>'}</div></td>
+        <td><div class="row-actions">
+          <button class="act-btn" id="cp-${l.code}" onclick="copyLink('${l.code}')">Copy</button>
+          <button class="act-btn edit-act" onclick="openEdit('${l.code}')">Edit</button>
+          <button class="act-btn ${l.enabled?'toggle-on':'toggle-off'}" onclick="toggleLink('${l.code}')">${l.enabled?'⏸ Disable':'▶ Enable'}</button>
+          <button class="act-btn qr-act" onclick="showQR('${l.code}')">QR</button>
+          <button class="act-btn del" onclick="deleteLink('${l.code}')">✕</button>
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+function cycleSort() {
+  const s = document.getElementById('sortSelect');
+  s.value = s.value==='clicks' ? 'newest' : 'clicks';
+  renderDashboard();
+}
+
+// ════════════════════════════════════════════
+// LINK ACTIONS
+// ════════════════════════════════════════════
+async function toggleLink(code) {
+  const l = links.find(x => x.code===code);
+  if (!l) return;
+  try {
+    const data = await apiFetch(`/links?code=${code}`, { method: 'PATCH' });
+    l.enabled = data.enabled;
+    renderAll();
+    showToast(`${l.enabled ? '▶ Enabled' : '⏸ Disabled'}: snip/${code}`, l.enabled ? 'green' : 'yellow');
+  } catch (err) {
+    showToast('⚠ ' + err.message, '');
+  }
+}
+
+function openEdit(code) {
+  const l = links.find(x => x.code===code);
+  if (!l) return;
+  document.getElementById('editCode').value = code;
+  document.getElementById('editCodeDisplay').textContent = `/r/${code}`;
+  document.getElementById('editUrl').value = l.original;
+  document.getElementById('editErr').classList.remove('show');
+  document.getElementById('editUrl').classList.remove('err');
+  document.getElementById('editOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('editUrl').select(), 100);
+}
+
+async function saveEdit() {
+  const code = document.getElementById('editCode').value;
+  const newUrl = document.getElementById('editUrl').value.trim();
+  const errEl = document.getElementById('editErr');
+  if (!newUrl || !isValidUrl(normalizeUrl(newUrl)||'')) {
+    errEl.classList.add('show');
+    document.getElementById('editUrl').classList.add('err');
+    return;
+  }
+  try {
+    await apiFetch(`/links?code=${code}`, {
+      method: 'PUT',
+      body: JSON.stringify({ originalUrl: normalizeUrl(newUrl) }),
+    });
+    const l = links.find(x => x.code===code);
+    if (l) {
+      l.original = normalizeUrl(newUrl);
+      try { l.domain = new URL(l.original).hostname.replace('www.',''); } catch {}
+      l.favicon = `https://www.google.com/s2/favicons?sz=32&domain=${new URL(l.original).hostname}`;
+    }
+    renderAll(); closeEdit();
+    showToast(`✏ Updated destination for /r/${code}`, 'purple');
+  } catch (err) {
+    showToast('⚠ ' + err.message, '');
+  }
+}
+
+function closeEdit() { document.getElementById('editOverlay').classList.remove('show'); }
+
+async function deleteLink(code) {
+  if (!confirm(`Delete /r/${code}? This cannot be undone.`)) return;
+  try {
+    await apiFetch(`/links?code=${code}`, { method: 'DELETE' });
+    links = links.filter(l => l.code !== code);
+    renderAll();
+    showToast(`🗑 Deleted /r/${code}`, '');
+  } catch (err) {
+    showToast('⚠ ' + err.message, '');
+  }
+}
+
+async function clearAll() {
+  if (!links.length) return;
+  if (!confirm(`Delete all ${links.length} link(s) permanently?`)) return;
+  try {
+    await Promise.all(links.map(l => apiFetch(`/links?code=${l.code}`, { method: 'DELETE' })));
+    links = [];
+    renderAll();
+    showToast('🗑 All links cleared', '');
+  } catch (err) {
+    showToast('⚠ ' + err.message, '');
+  }
+}
+
+function copyLink(code) {
+  const l = links.find(x => x.code===code);
+  if (!l) return;
+  if (navigator.clipboard) navigator.clipboard.writeText(l.short).catch(()=>{});
+  else { const el = document.createElement('textarea'); el.value = l.short; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); }
+  const btn = document.getElementById(`cp-${code}`);
+  if (btn) { btn.textContent = '✓ Copied'; btn.classList.add('copied'); }
+  showToast('📋 Short link copied', 'green');
+  setTimeout(() => { if(btn) { btn.textContent = 'Copy'; btn.classList.remove('copied'); } }, 2000);
+}
+
+function showQR(code) {
+  const l = links.find(x => x.code===code);
+  if (!l) return;
+  currentQrUrl = l.short;
+  document.getElementById('qrLabel').textContent = l.short;
+  const box = document.getElementById('qrCode');
+  box.innerHTML = '';
+  try { new QRCode(box, { text: l.short, width: 180, height: 180, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H }); }
+  catch(e) { box.textContent = 'QR unavailable'; }
+  document.getElementById('qrOverlay').classList.add('show');
+}
+
+function downloadQR() {
+  const canvas = document.querySelector('#qrCode canvas');
+  if (!canvas) { showToast('QR not ready', ''); return; }
+  const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = `snip-qr-${Date.now()}.png`; a.click();
+  showToast('↓ QR downloaded', 'green');
+}
+
+function closeQR() { document.getElementById('qrOverlay').classList.remove('show'); }
+
+function copyResult() {
+  const ri = document.getElementById('resultInput');
+  const btn = document.getElementById('copyResultBtn');
+  const text = ri.value;
+  if (!text) return;
+  if (navigator.clipboard) navigator.clipboard.writeText(text).catch(()=>{});
+  else { ri.select(); document.execCommand('copy'); }
+  btn.textContent = '✓ Copied!'; btn.classList.add('done');
+  ri.select();
+  showToast('📋 Copied to clipboard', 'green');
+  setTimeout(() => { btn.textContent = 'Copy Link'; btn.classList.remove('done'); }, 2500);
+}
+
+function dismissResult() { document.getElementById('resultBanner').classList.remove('show'); }
+
+function exportCSV() {
+  if (!links.length) { showToast('No links to export', ''); return; }
+  const rows = [['Code','Original URL','Short URL','Clicks','Click Limit','Status','Created','Last Accessed']];
+  links.forEach(l => rows.push([l.code, l.original, l.short, l.clicks, l.clickLimit??'unlimited', getLinkStatus(l), l.created, l.lastAccessed||'']));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = `snip-${Date.now()}.csv`; a.click();
+  showToast(`↓ Exported ${links.length} links`, 'green');
+}
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, cls='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast'+(cls?' '+cls:''); t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function normalizeUrl(raw) {
+  if (!raw) return null;
+  let u = raw.trim();
+  if (!u) return null;
+  if (/^https?:\/\//i.test(u)) return u;
+  if (u.startsWith('//')) return 'https:'+u;
+  return 'https://'+u;
+}
+
+function isValidUrl(str) {
+  try { const u = new URL(str); return /^https?:$/.test(u.protocol) && u.hostname.length>1; }
+  catch { return false; }
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})+'\n'+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+init();
+</script>
+</body>
+</html>
