@@ -1,39 +1,52 @@
-SNIP — Link Shortener 🔗
+# 🔗 SNIP — Link Shortener
+
 Turn any long URL into a short, clean link instantly.
-🌐 Live: https://link-shortner-hack.netlify.app
 
-About
-SNIP is a modern link shortener where you can create short links, track clicks, and manage all your links from one dashboard. No more sharing ugly long URLs — just paste, shorten, and share.
+🌐 **Live Application:**  
+https://link-shortner-hack.netlify.app
 
-How It Works
+## About
 
-Sign up for a free account
-Paste any long URL into the input box
-Click Shorten — get a real short link instantly
-Share the short link anywhere — it works in any browser
-Track how many people clicked your link from the dashboard
+SNIP is a modern web-based link shortener that allows users to create clean, shareable links and manage them from a simple dashboard. Instead of sharing long and complex URLs, users can generate short links that are easy to remember and distribute.
 
+The platform also provides analytics and management tools, allowing users to track link performance and control how their links behave.
 
-Features
+## How It Works
 
-🔐 Login / Register — your links are saved to your account
-✂️ Shorten any URL — works with any website
-🏷️ Custom Alias — pick your own short name like /r/my-brand
-📊 Click Tracking — see how many times each link was clicked
-⏱️ Click Limits — set a max clicks before the link expires
-⏸️ Enable / Disable — pause a link anytime without deleting it
-✏️ Edit Links — change the destination URL without changing the short code
-📷 QR Code — generate a QR code for any link and download it
-📥 Export CSV — download all your links and stats as a spreadsheet
+1. Create a free account or log in  
+2. Paste a long URL into the input field  
+3. Click **Shorten** to generate a short link instantly  
+4. Share the link anywhere  
+5. Track link activity from the dashboard
 
+## Features
 
-Tech Used
+🔐 **User Authentication** — Secure login and registration system  
+✂️ **URL Shortening** — Convert long URLs into short, shareable links  
+🏷️ **Custom Alias** — Choose your own short link name  
+📊 **Click Tracking** — Monitor how many times each link is used  
+⏱️ **Click Limits** — Set maximum clicks before a link expires  
+⏸️ **Link Control** — Enable or disable links anytime  
+✏️ **Edit Destination** — Update the target URL without changing the short code  
+📷 **QR Code Generation** — Create downloadable QR codes for links  
+📥 **CSV Export** — Export all links and statistics for analysis
 
-HTML, CSS, JavaScript — frontend
-Netlify — hosting and serverless backend functions
-Neon Postgres — cloud database to store links and users
-JWT + bcrypt — secure login and password protection
+## Technology Stack
 
+Frontend  
+HTML  
+CSS  
+JavaScript  
 
-Made by
-Nikhil Simha — github.com/Nikhilsimha31
+Backend & Infrastructure  
+Netlify Serverless Functions  
+Neon PostgreSQL Database  
+
+Security  
+JWT Authentication  
+bcrypt Password Hashing
+
+## Author
+
+Developed by **Nikhil Simha**  
+GitHub: https://github.com/Nikhilsimha31
